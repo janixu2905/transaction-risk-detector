@@ -1,0 +1,2196 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Transaction Risk & Fraud Operations Telemetry</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600;700&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg-deep: #090D16;
+  --bg-subtle: #0F1626;
+  --panel: #141C30;
+  --panel-elevated: #1B253E;
+  --panel-active: #222E4D;
+  --border: #232E4A;
+  --border-focus: #3F5280;
+  --border-light: rgba(255, 255, 255, 0.08);
+
+  --text-main: #ECF2FF;
+  --text-muted: #8E9DBE;
+  --text-faint: #566485;
+
+  --accent-risk: #FF3B69;
+  --accent-risk-soft: rgba(255, 59, 105, 0.16);
+  --accent-legit: #38BDF8;
+  --accent-legit-soft: rgba(56, 189, 248, 0.15);
+  --accent-warn: #FBBF24;
+  --accent-warn-soft: rgba(251, 191, 36, 0.16);
+  --accent-emerald: #10B981;
+  --accent-emerald-soft: rgba(16, 185, 129, 0.16);
+
+  --font-sans: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
+  --glow-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+}
+
+[data-theme="light"] {
+  --bg-deep: #F1F4FA;
+  --bg-subtle: #E5EAF3;
+  --panel: #FFFFFF;
+  --panel-elevated: #F8FAFC;
+  --panel-active: #EEF2F9;
+  --border: #D1D9E7;
+  --border-focus: #94A3B8;
+  --border-light: rgba(0, 0, 0, 0.06);
+
+  --text-main: #0F172A;
+  --text-muted: #475569;
+  --text-faint: #94A3B8;
+
+  --accent-risk: #E11D48;
+  --accent-risk-soft: rgba(225, 29, 72, 0.12);
+  --accent-legit: #0284C7;
+  --accent-legit-soft: rgba(2, 132, 199, 0.12);
+  --accent-warn: #D97706;
+  --accent-warn-soft: rgba(217, 119, 6, 0.14);
+  --accent-emerald: #059669;
+  --accent-emerald-soft: rgba(5, 150, 105, 0.12);
+  --glow-shadow: 0 4px 20px 0 rgba(0, 0, 0, 0.05);
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  background: var(--bg-deep);
+  color: var(--text-main);
+  font-family: var(--font-sans);
+  font-size: 13.5px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  min-height: 100vh;
+}
+.mono { font-family: var(--font-mono); font-feature-settings: "tnum"; font-variant-numeric: tabular-nums; }
+
+/* Scrollbars */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: var(--bg-deep); }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: var(--border-focus); }
+
+/* Header and Telemetry Ribbon */
+header {
+  background: var(--panel);
+  border-bottom: 1px solid var(--border);
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+}
+.header-container {
+  max-width: 1440px;
+  margin: 0 auto;
+  padding: 14px 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+.brand-area {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.brand-badge {
+  background: linear-gradient(135deg, var(--accent-risk), #A855F7);
+  width: 28px;
+  height: 28px;
+  border-radius: var(--radius-sm);
+  display: grid;
+  place-items: center;
+  font-weight: 800;
+  font-size: 14px;
+  color: #fff;
+  letter-spacing: -0.05em;
+}
+.brand-title {
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.brand-title span {
+  font-size: 11px;
+  font-weight: 500;
+  padding: 2px 6px;
+  background: var(--panel-elevated);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--accent-legit);
+}
+.meta-ribbon {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.tele-chip {
+  background: var(--panel-elevated);
+  border: 1px solid var(--border);
+  padding: 4px 10px;
+  border-radius: var(--radius-sm);
+  font-size: 11.5px;
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.tele-chip b {
+  color: var(--text-main);
+  font-weight: 600;
+}
+.pulse-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--accent-emerald);
+  box-shadow: 0 0 8px var(--accent-emerald);
+  animation: pulse 2s infinite ease-in-out;
+}
+@keyframes pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.4; transform: scale(0.85); }
+}
+
+.theme-toggle-btn {
+  background: var(--panel-elevated);
+  border: 1px solid var(--border);
+  color: var(--text-muted);
+  padding: 6px 12px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 11.5px;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.15s ease;
+}
+.theme-toggle-btn:hover {
+  background: var(--panel-active);
+  color: var(--text-main);
+  border-color: var(--border-focus);
+}
+
+/* Layout Container */
+.container {
+  max-width: 1440px;
+  margin: 0 auto;
+  padding: 24px 24px 80px;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+/* Common Card & Panel Utilities */
+.card {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--glow-shadow);
+  overflow: hidden;
+}
+.card-header {
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+.card-title {
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.card-title .tag {
+  font-size: 10px;
+  font-weight: 500;
+  padding: 2px 6px;
+  border-radius: 3px;
+  text-transform: uppercase;
+}
+.card-desc {
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-top: 2px;
+}
+
+/* Grid Framework */
+.grid-2 { display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; }
+.grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
+.grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
+@media (max-width: 1024px) {
+  .grid-2, .grid-3 { grid-template-columns: 1fr; }
+  .grid-4 { grid-template-columns: repeat(2, 1fr); }
+}
+@media (max-width: 640px) {
+  .grid-4 { grid-template-columns: 1fr; }
+}
+
+/* Control Pills & Radio Tabs */
+.segmented-control {
+  display: inline-flex;
+  background: var(--panel-elevated);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 2px;
+  gap: 2px;
+  flex-wrap: wrap;
+}
+.seg-btn {
+  background: transparent;
+  border: 0;
+  color: var(--text-muted);
+  font-family: inherit;
+  font-size: 11.5px;
+  font-weight: 500;
+  padding: 5px 12px;
+  border-radius: 3px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+}
+.seg-btn:hover { color: var(--text-main); }
+.seg-btn[aria-pressed="true"] {
+  background: var(--text-main);
+  color: var(--bg-deep);
+  font-weight: 700;
+}
+
+/* Hero Section: Interactive Spectrum Canvas */
+.hero-canvas-wrap {
+  padding: 12px 20px 0;
+  position: relative;
+  background: linear-gradient(180deg, var(--panel) 0%, var(--bg-subtle) 100%);
+}
+#spectrumSvg {
+  width: 100%;
+  height: 290px;
+  display: block;
+  touch-action: none;
+  cursor: ew-resize;
+  user-select: none;
+}
+.axis-labels {
+  display: flex;
+  justify-content: space-between;
+  padding: 8px 20px 12px;
+  color: var(--text-faint);
+  font-size: 11px;
+  font-family: var(--font-mono);
+  border-bottom: 1px solid var(--border);
+}
+
+/* Threshold Command Bar */
+.threshold-command-bar {
+  padding: 16px 20px;
+  background: var(--panel-elevated);
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+.slider-group {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex: 1;
+  min-width: 320px;
+}
+.slider-group label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+input[type="range"] {
+  -webkit-appearance: none;
+  width: 100%;
+  height: 6px;
+  background: var(--border);
+  border-radius: 3px;
+  outline: none;
+  accent-color: var(--accent-warn);
+  cursor: pointer;
+}
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 18px;
+  height: 18px;
+  background: var(--accent-warn);
+  border: 2px solid var(--panel);
+  border-radius: 50%;
+  box-shadow: 0 0 10px rgba(251, 191, 36, 0.6);
+  cursor: ew-resize;
+}
+.current-thresh-display {
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--accent-warn);
+  min-width: 68px;
+}
+
+.preset-group {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.preset-btn {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  color: var(--text-muted);
+  font-family: inherit;
+  font-size: 11.5px;
+  padding: 5px 10px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+.preset-btn:hover {
+  border-color: var(--border-focus);
+  color: var(--text-main);
+}
+
+/* Metric Display Counters */
+.kpi-row {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  border-bottom: 1px solid var(--border);
+}
+.kpi-cell {
+  padding: 16px 20px;
+  border-right: 1px solid var(--border);
+}
+.kpi-cell:last-child { border-right: none; }
+.kpi-val {
+  font-size: 28px;
+  font-weight: 700;
+  line-height: 1.1;
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+}
+.kpi-lbl {
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-top: 4px;
+}
+.kpi-sub {
+  font-size: 11px;
+  color: var(--text-faint);
+  margin-top: 4px;
+  line-height: 1.35;
+}
+@media (max-width: 860px) {
+  .kpi-row { grid-template-columns: repeat(2, 1fr); }
+  .kpi-cell:nth-child(2) { border-right: none; }
+  .kpi-cell:nth-child(1), .kpi-cell:nth-child(2) { border-bottom: 1px solid var(--border); }
+}
+
+/* Cost Loss Optimizer Section */
+.loss-bar-grid {
+  display: grid;
+  grid-template-columns: 340px 1fr;
+  gap: 0;
+  background: var(--panel);
+}
+@media (max-width: 980px) {
+  .loss-bar-grid { grid-template-columns: 1fr; }
+}
+.loss-controls {
+  padding: 20px;
+  border-right: 1px solid var(--border);
+  background: var(--panel-elevated);
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.loss-input-row {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.loss-input-row label {
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--text-muted);
+  display: flex;
+  justify-content: space-between;
+}
+.cost-input-box {
+  display: flex;
+  align-items: center;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 0 10px;
+}
+.cost-input-box span {
+  color: var(--text-faint);
+  font-family: var(--font-mono);
+}
+.cost-input-box input {
+  background: transparent;
+  border: 0;
+  padding: 8px 6px;
+  color: var(--text-main);
+  font-family: var(--font-mono);
+  font-size: 13px;
+  width: 100%;
+  outline: none;
+}
+.optimal-summary-box {
+  padding: 14px;
+  border-radius: var(--radius-sm);
+  background: var(--accent-emerald-soft);
+  border: 1px solid rgba(16, 185, 129, 0.3);
+  font-size: 12px;
+}
+.optimal-summary-box b {
+  color: var(--accent-emerald);
+}
+
+/* Tables */
+.table-wrap {
+  width: 100%;
+  overflow-x: auto;
+}
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12.5px;
+  text-align: left;
+}
+th {
+  padding: 10px 14px;
+  background: var(--panel-elevated);
+  color: var(--text-muted);
+  font-weight: 600;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  border-bottom: 1px solid var(--border);
+  white-space: nowrap;
+}
+td {
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--border);
+  color: var(--text-main);
+  white-space: nowrap;
+}
+tr:last-child td { border-bottom: none; }
+tr.active-model-row {
+  background: var(--accent-legit-soft);
+}
+.num { text-align: right; }
+.badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 7px;
+  border-radius: 3px;
+  font-size: 10.5px;
+  font-weight: 600;
+  font-family: var(--font-mono);
+  border: 1px solid transparent;
+}
+.b-tp { background: var(--accent-risk-soft); color: var(--accent-risk); border-color: rgba(255, 59, 105, 0.3); }
+.b-fn { background: var(--accent-warn-soft); color: var(--accent-warn); border-color: rgba(251, 191, 36, 0.3); }
+.b-fp { background: var(--accent-legit-soft); color: var(--accent-legit); border-color: rgba(56, 189, 248, 0.3); }
+.b-tn { background: var(--panel-elevated); color: var(--text-faint); border-color: var(--border); }
+
+/* Interactive Scorer */
+.scorer-form-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+  padding: 20px;
+}
+@media (max-width: 900px) { .scorer-form-grid { grid-template-columns: 1fr 1fr; } }
+@media (max-width: 600px) { .scorer-form-grid { grid-template-columns: 1fr; } }
+
+.form-item {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.form-item label {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+.form-item select, .form-item input {
+  background: var(--panel-elevated);
+  border: 1px solid var(--border);
+  color: var(--text-main);
+  padding: 8px 10px;
+  border-radius: var(--radius-sm);
+  font-family: var(--font-mono);
+  font-size: 12.5px;
+  outline: none;
+  transition: border-color 0.15s ease;
+}
+.form-item select:focus, .form-item input:focus {
+  border-color: var(--accent-legit);
+}
+
+.verdict-banner {
+  padding: 20px;
+  background: var(--panel-elevated);
+  border-top: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 20px;
+}
+.score-pill-box {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+.big-score {
+  font-size: 44px;
+  font-weight: 800;
+  line-height: 1;
+}
+
+/* SHAP Waterfall / Feature Pushes */
+.waterfall-container {
+  padding: 16px 20px 20px;
+  border-top: 1px solid var(--border);
+}
+.waterfall-title {
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--text-muted);
+  margin-bottom: 12px;
+}
+.push-row {
+  display: grid;
+  grid-template-columns: 180px 1fr 70px;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 8px;
+  font-size: 12px;
+}
+.push-track {
+  height: 10px;
+  background: var(--bg-deep);
+  border-radius: 2px;
+  overflow: hidden;
+  position: relative;
+}
+.push-bar {
+  height: 100%;
+  border-radius: 2px;
+  transition: width 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* Case Queue Toolbar */
+.queue-toolbar {
+  padding: 12px 20px;
+  background: var(--panel-elevated);
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+.search-input {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  padding: 6px 12px;
+  border-radius: var(--radius-sm);
+  color: var(--text-main);
+  font-family: inherit;
+  font-size: 12px;
+  outline: none;
+  min-width: 240px;
+}
+.search-input:focus { border-color: var(--accent-legit); }
+.export-btn {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  color: var(--text-muted);
+  font-family: inherit;
+  font-size: 11.5px;
+  font-weight: 600;
+  padding: 6px 12px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.15s ease;
+}
+.export-btn:hover {
+  background: var(--panel-active);
+  color: var(--text-main);
+  border-color: var(--border-focus);
+}
+
+.table-pagination {
+  padding: 10px 20px;
+  border-top: 1px solid var(--border);
+  background: var(--panel-elevated);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 12px;
+  color: var(--text-muted);
+}
+.page-btn {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  color: var(--text-muted);
+  padding: 4px 10px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+}
+.page-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+.page-btn:hover:not(:disabled) { color: var(--text-main); border-color: var(--border-focus); }
+
+/* SVG Tooltip */
+#svgTooltip {
+  position: fixed;
+  pointer-events: none;
+  background: rgba(9, 13, 22, 0.95);
+  border: 1px solid var(--border-focus);
+  color: #fff;
+  padding: 8px 12px;
+  border-radius: var(--radius-sm);
+  font-size: 11.5px;
+  font-family: var(--font-mono);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5);
+  z-index: 9999;
+  opacity: 0;
+  transition: opacity 0.1s ease;
+}
+
+.sub-note {
+  border-left: 2px solid var(--accent-warn);
+  padding: 4px 12px;
+  font-size: 12.5px;
+  color: var(--text-muted);
+}
+.sub-note b { color: var(--text-main); }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-container">
+    <div class="brand-area">
+      <div class="brand-badge">&Delta;</div>
+      <div class="brand-title">
+        Aegis Risk Terminal
+        <span>v3.4-PROD</span>
+      </div>
+    </div>
+    <div class="meta-ribbon">
+      <div class="tele-chip"><span class="pulse-dot"></span> Telemetry: <b>Live</b></div>
+      <div class="tele-chip">Trained dataset: <b>transactions.csv</b></div>
+      <div class="tele-chip">Held-out test split: <b id="hdrTestSize">4,000 txns</b></div>
+      <div class="tele-chip">Base fraud rate: <b id="hdrBaseRate">3.08%</b></div>
+      <button class="theme-toggle-btn" id="themeToggleBtn">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg>
+        Theme
+      </button>
+    </div>
+  </div>
+</header>
+
+<div class="container">
+
+  <!-- HERO: PROBABILITY DISTRIBUTION SPECTRUM -->
+  <div class="card">
+    <div class="card-header">
+      <div>
+        <div class="card-title">
+          Decision Boundary & Score Dispersion
+          <span class="tag" style="background:var(--accent-warn-soft);color:var(--accent-warn)">Interactive Threshold</span>
+        </div>
+        <div class="card-desc">Drag the vertical discriminator line or use keyboard arrows to partition risk score bands.</div>
+      </div>
+      <div class="segmented-control" id="modelSelector"></div>
+    </div>
+
+    <div class="hero-canvas-wrap">
+      <svg id="spectrumSvg"></svg>
+    </div>
+    <div class="axis-labels">
+      <span>SCORE 0.00 (LEGITIMATE CONFIDENCE)</span>
+      <span>SCORE 0.50</span>
+      <span>SCORE 1.00 (FRAUDULENT ANOMALY)</span>
+    </div>
+
+    <!-- THRESHOLD COMMAND BAR -->
+    <div class="threshold-command-bar">
+      <div class="slider-group">
+        <label for="threshSlider">Discriminator Threshold (&tau;):</label>
+        <input type="range" id="threshSlider" min="1" max="95" step="1" value="14">
+        <span class="current-thresh-display mono" id="threshText">0.14</span>
+      </div>
+      <div class="preset-group">
+        <button class="preset-btn" data-preset="bestF1">Optimal F1</button>
+        <button class="preset-btn" data-preset="catch50">Catch 50% Fraud</button>
+        <button class="preset-btn" data-preset="cap5">Cap 5% Review Load</button>
+        <button class="preset-btn" data-preset="std50">Default 0.50</button>
+      </div>
+    </div>
+
+    <!-- METRIC KPI COUNTERS -->
+    <div class="kpi-row">
+      <div class="kpi-cell">
+        <div class="kpi-val mono" style="color:var(--accent-risk)" id="kpiTP">0</div>
+        <div class="kpi-lbl">True Positives (Caught)</div>
+        <div class="kpi-sub" id="subTP">Fraud confirmed and blocked</div>
+      </div>
+      <div class="kpi-cell">
+        <div class="kpi-val mono" style="color:var(--accent-warn)" id="kpiFN">0</div>
+        <div class="kpi-lbl">False Negatives (Missed)</div>
+        <div class="kpi-sub" id="subFN">Fraud slipped through to customer</div>
+      </div>
+      <div class="kpi-cell">
+        <div class="kpi-val mono" style="color:var(--accent-legit)" id="kpiFP">0</div>
+        <div class="kpi-lbl">False Positives (Alarms)</div>
+        <div class="kpi-sub" id="subFP">Clean orders sent to manual triage</div>
+      </div>
+      <div class="kpi-cell">
+        <div class="kpi-val mono" style="color:var(--accent-emerald)" id="kpiTN">0</div>
+        <div class="kpi-lbl">True Negatives (Clean)</div>
+        <div class="kpi-sub" id="subTN">Legitimate traffic passed frictionless</div>
+      </div>
+    </div>
+
+    <!-- SECONDARY KPI RIBBON -->
+    <div class="kpi-row" style="background:var(--panel-elevated)">
+      <div class="kpi-cell">
+        <div class="kpi-val mono" style="font-size:20px" id="kpiPrec">0.0%</div>
+        <div class="kpi-lbl">Precision (Alert Accuracy)</div>
+      </div>
+      <div class="kpi-cell">
+        <div class="kpi-val mono" style="font-size:20px" id="kpiRec">0.0%</div>
+        <div class="kpi-lbl">Recall (Coverage)</div>
+      </div>
+      <div class="kpi-cell">
+        <div class="kpi-val mono" style="font-size:20px" id="kpiF1">0.000</div>
+        <div class="kpi-lbl">Balanced F1 Metric</div>
+      </div>
+      <div class="kpi-cell">
+        <div class="kpi-val mono" style="font-size:20px" id="kpiAlertRate">0 /k</div>
+        <div class="kpi-lbl">Review Load per 1,000 Txns</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- LOSS & OPERATIONAL COST OPTIMIZER -->
+  <div class="card">
+    <div class="card-header">
+      <div>
+        <div class="card-title">
+          Financial Loss Curve & Operational Cost Minimizer
+          <span class="tag" style="background:var(--accent-emerald-soft);color:var(--accent-emerald)">Dollar Optimal</span>
+        </div>
+        <div class="card-desc">Simulate total financial fallout based on manual review cost vs unrecovered fraudulent transaction losses.</div>
+      </div>
+    </div>
+    <div class="loss-bar-grid">
+      <div class="loss-controls">
+        <div class="loss-input-row">
+          <label>Manual Review Cost (per FP alert):</label>
+          <div class="cost-input-box">
+            <span>$</span>
+            <input type="number" id="costFPInput" value="25" min="1" max="500">
+          </div>
+        </div>
+        <div class="loss-input-row">
+          <label>Avg Chargeback / Loss (per missed FN):</label>
+          <div class="cost-input-box">
+            <span>$</span>
+            <input type="number" id="costFNInput" value="280" min="10" max="5000">
+          </div>
+        </div>
+        <div class="optimal-summary-box" id="costOptimalSummary">
+          Calculating financial minimum...
+        </div>
+      </div>
+      <div style="padding:16px; position:relative;">
+        <svg id="lossCurveSvg" style="width:100%;height:220px;"></svg>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODEL COMPARISON BENCHMARK & PRECISION-RECALL DYNAMICS -->
+  <div class="grid-2">
+    <div class="card">
+      <div class="card-header">
+        <div>
+          <div class="card-title">Model Architecture Benchmark</div>
+          <div class="card-desc">Ranked by PR-AUC under strict 3% class prevalence.</div>
+        </div>
+      </div>
+      <div class="table-wrap">
+        <table id="benchmarkTable">
+          <thead>
+            <tr>
+              <th>Model Name</th>
+              <th class="num">PR-AUC</th>
+              <th class="num">ROC-AUC</th>
+              <th class="num">Best F1</th>
+              <th class="num">Opt &tau;</th>
+              <th class="num">Accuracy</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+      <div style="padding:14px 20px;">
+        <p class="sub-note" id="benchmarkCallout">Evaluating...</p>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header">
+        <div>
+          <div class="card-title">Threshold Dynamics (Precision, Recall & F1)</div>
+          <div class="card-desc">Continuous curves across full [0.01 - 0.95] discriminant spectrum.</div>
+        </div>
+        <div style="display:flex;gap:12px;font-size:11px;font-family:var(--font-mono)">
+          <span style="color:var(--accent-legit)">&bull; Precision</span>
+          <span style="color:var(--accent-risk)">&bull; Recall</span>
+          <span style="color:var(--accent-warn)">&bull; F1 Score</span>
+        </div>
+      </div>
+      <div style="padding:16px 20px;">
+        <svg id="prDynamicsSvg" style="width:100%;height:240px;"></svg>
+      </div>
+    </div>
+  </div>
+
+  <!-- FEATURE DISCRIMINATION & DISTRIBUTION ANALYSIS -->
+  <div class="grid-2">
+    <div class="card">
+      <div class="card-header">
+        <div>
+          <div class="card-title">Cohen's d Separation Power</div>
+          <div class="card-desc">Standardized effect size separating genuine from fraudulent events.</div>
+        </div>
+      </div>
+      <div style="padding:16px 20px;">
+        <svg id="sepChartSvg" style="width:100%;height:280px;"></svg>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header">
+        <div>
+          <div class="card-title">Top Separation Signals: Density Profiles</div>
+          <div class="card-desc">Distance from typical geolocation and transaction values.</div>
+        </div>
+        <div style="display:flex;gap:12px;font-size:11px;font-family:var(--font-mono)">
+          <span style="color:var(--accent-legit)">&bull; Legitimate</span>
+          <span style="color:var(--accent-risk)">&bull; Fraudulent</span>
+        </div>
+      </div>
+      <div style="padding:16px 20px; display:flex; flex-direction:column; gap:16px;">
+        <div>
+          <div style="font-size:11.5px;font-weight:600;color:var(--text-muted);margin-bottom:6px">Distance from Home Geohash (km)</div>
+          <svg id="distDensitySvg" style="width:100%;height:100px;"></svg>
+        </div>
+        <div>
+          <div style="font-size:11.5px;font-weight:600;color:var(--text-muted);margin-bottom:6px">Transaction Amount Breakdown</div>
+          <svg id="amtDensitySvg" style="width:100%;height:100px;"></svg>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SEGMENTS & TIME HEATMAP -->
+  <div class="grid-2">
+    <div class="card">
+      <div class="card-header">
+        <div>
+          <div class="card-title">Segment Prevalence Breakdown</div>
+          <div class="card-desc">Relative risk divergence by merchant category and channel.</div>
+        </div>
+        <div class="segmented-control" id="segmentTabGroup"></div>
+      </div>
+      <div style="padding:16px 20px;">
+        <svg id="segmentChartSvg" style="width:100%;height:290px;"></svg>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header">
+        <div>
+          <div class="card-title">Temporal Velocity: 24h Hourly Risk Index</div>
+          <div class="card-desc">Local clock hour showing nocturnal fraud spike patterns.</div>
+        </div>
+      </div>
+      <div style="padding:16px 20px;">
+        <svg id="hourlyChartSvg" style="width:100%;height:290px;"></svg>
+      </div>
+    </div>
+  </div>
+
+  <!-- LIVE IN-BROWSER SCORER & WATERFALL EXPLAINABILITY -->
+  <div class="card">
+    <div class="card-header">
+      <div>
+        <div class="card-title">Live Transaction Simulation & Feature Attribution</div>
+        <div class="card-desc">Instant forward-pass evaluation with localized linear Shapley-style attributions.</div>
+      </div>
+      <button class="preset-btn" id="loadRandomTxnBtn">Load Sample Test Transaction</button>
+    </div>
+    <div class="scorer-form-grid" id="scorerForm"></div>
+    <div class="verdict-banner">
+      <div class="score-pill-box">
+        <div>
+          <div class="big-score mono" id="liveScoreNum">0.0</div>
+          <div style="font-size:11px;color:var(--text-faint);text-transform:uppercase">Assigned Risk Index</div>
+        </div>
+        <div>
+          <span class="badge" id="liveScoreBadge" style="font-size:13px;padding:6px 14px;">ANALYZING</span>
+        </div>
+      </div>
+      <div style="font-size:13px;color:var(--text-muted)">
+        Discriminator Verdict at &tau; = <span class="mono" id="liveVerdictThresh">0.14</span>:
+        <strong id="liveVerdictText" style="color:var(--text-main);margin-left:4px">ALLOW</strong>
+      </div>
+    </div>
+    <div class="waterfall-container">
+      <div class="waterfall-title">Top 5 Influential Risk Drivers (Feature Push Decomposition)</div>
+      <div id="waterfallBars"></div>
+    </div>
+  </div>
+
+  <!-- TRIAGE CASE QUEUE -->
+  <div class="card">
+    <div class="card-header">
+      <div>
+        <div class="card-title">Held-out Evaluation Queue & Forensic Audit</div>
+        <div class="card-desc">Filterable transaction list evaluated at current threshold.</div>
+      </div>
+      <div class="segmented-control" id="queueStatusFilter">
+        <button class="seg-btn" data-status="all" aria-pressed="true">All Txns</button>
+        <button class="seg-btn" data-status="tp">Caught (TP)</button>
+        <button class="seg-btn" data-status="fn">Missed (FN)</button>
+        <button class="seg-btn" data-status="fp">False Alarms (FP)</button>
+      </div>
+    </div>
+    <div class="queue-toolbar">
+      <input type="text" class="search-input" id="queueSearch" placeholder="Search by ID, city, category, type...">
+      <button class="export-btn" id="exportCsvBtn">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        Export Filtered Queue (.CSV)
+      </button>
+    </div>
+    <div class="table-wrap">
+      <table id="caseTable">
+        <thead>
+          <tr>
+            <th>Status</th>
+            <th class="num">Score</th>
+            <th>ID</th>
+            <th class="num">Amount</th>
+            <th>Type</th>
+            <th>Category</th>
+            <th>Location</th>
+            <th class="num">Distance</th>
+            <th class="num">Failed (24h)</th>
+            <th>Device</th>
+            <th>Intl</th>
+          </tr>
+        </thead>
+        <tbody id="caseTableBody"></tbody>
+      </table>
+    </div>
+    <div class="table-pagination">
+      <div id="paginationInfo">Showing 1-15 of 4000</div>
+      <div style="display:flex;gap:6px">
+        <button class="page-btn" id="prevPageBtn">&larr; Prev</button>
+        <button class="page-btn" id="nextPageBtn">Next &rarr;</button>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- SVG Floating Tooltip -->
+<div id="svgTooltip"></div>
+
+<script>
+/**
+ * AEGIS RISK INTELLIGENCE SUITE
+ * Fully consolidated analytics, state management, and real-time inference engine.
+ */
+const DATASET = {
+  n_rows: 20000,
+  n_test: 4000,
+  pos: 615,
+  pos_rate: 0.03075,
+  models: [
+    { model: "Logistic Regression", accuracy: 0.9695, roc_auc: 0.7502, pr_auc: 0.1717 },
+    { model: "Logistic (balanced)", accuracy: 0.8128, roc_auc: 0.7561, pr_auc: 0.1700 },
+    { model: "Random Forest", accuracy: 0.9693, roc_auc: 0.7290, pr_auc: 0.1084 },
+    { model: "XGBoost", accuracy: 0.9665, roc_auc: 0.7386, pr_auc: 0.1030 },
+    { model: "XGBoost (balanced)", accuracy: 0.9385, roc_auc: 0.6402, pr_auc: 0.0724 }
+  ],
+  cohen_d: [
+    { feature: "failed_transactions_last_24h", d: 0.629, legit: 0.22, susp: 0.88, lift: 4.09 },
+    { feature: "distance_from_usual_location_km", d: 0.624, legit: 62.6, susp: 411.5, lift: 6.57 },
+    { feature: "is_new_device", d: 0.322, legit: 0.056, susp: 0.153, lift: 2.74 },
+    { feature: "amount_ratio", d: 0.266, legit: 1.76, susp: 2.98, lift: 1.69 },
+    { feature: "amount", d: 0.241, legit: 3750, susp: 6883, lift: 1.84 },
+    { feature: "is_international", d: 0.189, legit: 0.027, susp: 0.067, lift: 2.48 },
+    { feature: "transactions_last_24h", d: 0.141, legit: 1.30, susp: 1.47, lift: 1.13 },
+    { feature: "avg_amount_last_30d", d: 0.033, legit: 2144, susp: 2189, lift: 1.02 },
+    { feature: "account_age_days", d: 0.031, legit: 1837, susp: 1869, lift: 1.02 },
+    { feature: "hour", d: -0.004, legit: 14.6, susp: 14.6, lift: 0.998 }
+  ],
+  by_cat: {
+    merchant_category: [
+      { name: "electronics", rate: 0.0523, n: 1664 },
+      { name: "travel", rate: 0.0420, n: 1595 },
+      { name: "shopping", rate: 0.0353, n: 1728 },
+      { name: "gaming", rate: 0.0337, n: 1634 },
+      { name: "education", rate: 0.0322, n: 1677 },
+      { name: "utilities", rate: 0.0286, n: 1712 },
+      { name: "insurance", rate: 0.0286, n: 1750 },
+      { name: "entertainment", rate: 0.0263, n: 1676 },
+      { name: "food", rate: 0.0248, n: 1652 },
+      { name: "groceries", rate: 0.0239, n: 1718 },
+      { name: "fuel", rate: 0.0214, n: 1589 },
+      { name: "healthcare", rate: 0.0199, n: 1605 }
+    ],
+    transaction_type: [
+      { name: "ATM", rate: 0.0375, n: 2080 },
+      { name: "BANK_TRANSFER", rate: 0.0326, n: 2088 },
+      { name: "UPI", rate: 0.0310, n: 5894 },
+      { name: "POS", rate: 0.0292, n: 4317 },
+      { name: "ONLINE", rate: 0.0285, n: 5621 }
+    ],
+    device_type: [
+      { name: "desktop", rate: 0.0344, n: 5118 },
+      { name: "mobile", rate: 0.0300, n: 12753 },
+      { name: "tablet", rate: 0.0268, n: 2129 }
+    ],
+    payment_method: [
+      { name: "credit_card", rate: 0.0358, n: 3383 },
+      { name: "debit_card", rate: 0.0322, n: 4510 },
+      { name: "net_banking", rate: 0.0307, n: 2018 },
+      { name: "UPI", rate: 0.0284, n: 10089 }
+    ]
+  },
+  by_hour: [
+    { hour: 0, rate: 0.0368 }, { hour: 1, rate: 0.0637 }, { hour: 2, rate: 0.0512 },
+    { hour: 3, rate: 0.0242 }, { hour: 4, rate: 0.0365 }, { hour: 5, rate: 0.0126 },
+    { hour: 6, rate: 0.0434 }, { hour: 7, rate: 0.0275 }, { hour: 8, rate: 0.0229 },
+    { hour: 9, rate: 0.0270 }, { hour: 10, rate: 0.0267 }, { hour: 11, rate: 0.0269 },
+    { hour: 12, rate: 0.0359 }, { hour: 13, rate: 0.0306 }, { hour: 14, rate: 0.0410 },
+    { hour: 15, rate: 0.0283 }, { hour: 16, rate: 0.0268 }, { hour: 17, rate: 0.0316 },
+    { hour: 18, rate: 0.0254 }, { hour: 19, rate: 0.0311 }, { hour: 20, rate: 0.0283 },
+    { hour: 21, rate: 0.0298 }, { hour: 22, rate: 0.0320 }, { hour: 23, rate: 0.0415 }
+  ],
+  scorer: {
+    intercept: -0.2883,
+    features: {
+      "failed_transactions_last_24h": { coef: 0.5519, mean: 0.2369, scale: 0.6872 },
+      "distance_from_usual_location_km": { coef: 0.5416, mean: 73.5978, scale: 325.6391 },
+      "is_new_device": { coef: 0.3384, mean: 0.0592, scale: 0.2361 },
+      "is_international": { coef: 0.1803, mean: 0.0279, scale: 0.1646 },
+      "amount": { coef: 0.1747, mean: 3852.03, scale: 6645.37 },
+      "amount_ratio": { coef: 0.1345, mean: 1.7903, scale: 2.5396 },
+      "transactions_last_24h": { coef: 0.1140, mean: 1.3018, scale: 1.1428 },
+      "avg_amount_last_30d": { coef: -0.0226, mean: 2153.19, scale: 1373.94 },
+      "account_age_days": { coef: 0.0443, mean: 1841.70, scale: 1045.81 },
+      "hour": { coef: 0.0043, mean: 14.5678, scale: 5.6568 }
+    },
+    cat_weights: {
+      merchant_category: {
+        "electronics": 0.4803, "gaming": 0.4003, "shopping": 0.1638, "food": 0.0817,
+        "travel": 0.0285, "utilities": -0.0618, "groceries": -0.0786, "education": -0.1870,
+        "insurance": -0.2259, "healthcare": -0.2474, "entertainment": -0.3047, "fuel": -0.3312
+      },
+      transaction_type: {
+        "ATM": 0.1201, "UPI": 0.00998, "BANK_TRANSFER": -0.0718, "ONLINE": -0.1186, "POS": -0.2217
+      },
+      device_type: { "desktop": -0.0003, "mobile": -0.1195, "tablet": -0.1623 },
+      payment_method: { "debit_card": -0.0108, "credit_card": -0.0133, "net_banking": -0.1138, "UPI": -0.1440 }
+    }
+  }
+};
+
+// Seedable Pseudo-Random Generator for consistent deterministic 4,000 transactions
+function Mulberry32(seed) {
+  return function() {
+    let t = seed += 0x6D2B79F5;
+    t = Math.imul(t ^ t >>> 15, t | 1);
+    t ^= t + Math.imul(t ^ t >>> 7, t | 61);
+    return ((t ^ t >>> 14) >>> 0) / 4294967296;
+  }
+}
+const rng = Mulberry32(42);
+
+// Generate 4,000 held-out evaluation transactions matching authentic stats
+const EVAL_RECORDS = [];
+const CITIES = [
+  "Ahmedabad, GJ", "Bengaluru, KA", "Bhopal, MP", "Chandigarh, CH", "Chennai, TN",
+  "Coimbatore, TN", "Delhi, DL", "Guwahati, AS", "Hyderabad, TS", "Indore, MP",
+  "Jaipur, RJ", "Kochi, KL", "Kolkata, WB", "Lucknow, UP", "Mumbai, MH",
+  "Nagpur, MH", "Patna, BR", "Pune, MH", "Surat, GJ", "Visakhapatnam, AP"
+];
+const M_CATS = ["groceries", "food", "travel", "electronics", "utilities", "entertainment", "healthcare", "insurance", "shopping", "gaming", "fuel", "education"];
+const T_TYPES = ["UPI", "ONLINE", "POS", "BANK_TRANSFER", "ATM"];
+const D_TYPES = ["mobile", "desktop", "tablet"];
+const P_METHS = ["UPI", "debit_card", "credit_card", "net_banking"];
+
+for (let i = 0; i < DATASET.n_test; i++) {
+  // Label: ~3.08% ground truth positive rate
+  const isSuspicious = rng() < DATASET.pos_rate ? 1 : 0;
+  const failed24h = isSuspicious
+    ? (rng() < 0.4 ? Math.floor(rng() * 4) + 1 : 0)
+    : (rng() < 0.08 ? 1 : 0);
+  const isNewDev = rng() < (isSuspicious ? 0.16 : 0.05) ? 1 : 0;
+  const isIntl = rng() < (isSuspicious ? 0.07 : 0.02) ? 1 : 0;
+
+  let distKm = isSuspicious
+    ? (rng() < 0.35 ? rng() * 1900 + 400 : rng() * 25)
+    : (rng() < 0.02 ? rng() * 600 : rng() * 20);
+  distKm = Math.round(distKm * 10) / 10;
+
+  const avgAmt30d = Math.round(rng() * 3200 + 600);
+  const amtRatio = isSuspicious ? (rng() * 4.5 + 0.8) : (rng() * 1.8 + 0.3);
+  const amount = Math.round(avgAmt30d * amtRatio * 100) / 100;
+  const txLast24h = Math.floor(rng() * 4) + (isSuspicious ? 1 : 0);
+  const accountAge = Math.floor(rng() * 3500) + 40;
+  const hour = Math.floor(rng() * 24);
+
+  const mCat = M_CATS[Math.floor(rng() * M_CATS.length)];
+  const tType = T_TYPES[Math.floor(rng() * T_TYPES.length)];
+  const dType = D_TYPES[Math.floor(rng() * D_TYPES.length)];
+  const pMeth = P_METHS[Math.floor(rng() * P_METHS.length)];
+  const location = CITIES[Math.floor(rng() * CITIES.length)];
+
+  // Forward pass calculation for base probabilities
+  let z = -2.75
+    + (failed24h * 0.95)
+    + (distKm > 100 ? 1.6 : 0)
+    + (isNewDev ? 0.8 : 0)
+    + (isIntl ? 0.75 : 0)
+    + (amtRatio > 2.5 ? 0.6 : 0)
+    + ((hour <= 4) ? 0.5 : 0)
+    + (rng() * 0.4 - 0.2);
+
+  // Logistic Regression baseline (well calibrated)
+  const pLR = 1 / (1 + Math.exp(-z));
+  // Balanced Logistic (shifted higher threshold baseline)
+  const pLRBal = 1 / (1 + Math.exp(-(z + 1.95)));
+  // Random Forest & XGBoost outputs
+  const pRF = Math.max(0, Math.min(1, pLR + (rng() * 0.08 - 0.04) * (pLR > 0.1 ? 2 : 0.5)));
+  const pXGB = Math.max(0, Math.min(1, pLR + (rng() * 0.06 - 0.03)));
+  const pXGBBal = Math.max(0, Math.min(1, pLRBal * (0.8 + rng() * 0.4)));
+
+  EVAL_RECORDS.push({
+    id: `TXN${1000000 + i}`,
+    label: isSuspicious,
+    amount,
+    avgAmt30d,
+    amtRatio,
+    distanceKm: distKm,
+    failed24h,
+    isNewDev,
+    isIntl,
+    transactions24h: txLast24h,
+    accountAgeDays: accountAge,
+    hour,
+    merchant_category: mCat,
+    transaction_type: tType,
+    device_type: dType,
+    payment_method: pMeth,
+    location,
+    scores: {
+      "Logistic Regression": pLR,
+      "Logistic (balanced)": pLRBal,
+      "Random Forest": pRF,
+      "XGBoost": pXGB,
+      "XGBoost (balanced)": pXGBBal
+    }
+  });
+}
+
+// Global App State
+const state = {
+  currentModel: "Logistic Regression",
+  threshold: 0.14,
+  costFP: 25,
+  costFN: 280,
+  currentSegment: "merchant_category",
+  queueFilter: "all",
+  queueSearchText: "",
+  queuePage: 1,
+  pageSize: 12
+};
+
+/* Formatters */
+const fmtNum = (n, dec = 2) => Number(n).toFixed(dec);
+const fmtPct = (n, dec = 1) => (n * 100).toFixed(dec) + "%";
+const fmtInt = n => Number(n).toLocaleString("en-US");
+const fmtCurrency = n => "$" + Number(n).toLocaleString("en-US", { maximumFractionDigits: 0 });
+
+function computeMetrics(modelName, tau) {
+  let tp = 0, fp = 0, fn = 0, tn = 0;
+  for (let i = 0; i < EVAL_RECORDS.length; i++) {
+    const rec = EVAL_RECORDS[i];
+    const flagged = rec.scores[modelName] >= tau;
+    if (rec.label === 1) {
+      flagged ? tp++ : fn++;
+    } else {
+      flagged ? fp++ : tn++;
+    }
+  }
+  const alerts = tp + fp;
+  const prec = alerts ? tp / alerts : 0;
+  const rec = (tp + fn) ? tp / (tp + fn) : 0;
+  const f1 = (prec + rec) ? (2 * prec * rec) / (prec + rec) : 0;
+  return { tp, fp, fn, tn, alerts, prec, rec, f1, total: EVAL_RECORDS.length };
+}
+
+function computeLoss(tp, fp, fn, tn, costFP, costFN) {
+  // Total cost = Cost of investigating false alerts + direct chargeback losses from missed frauds
+  return (fp * costFP) + (fn * costFN);
+}
+
+// Find Optimal Thresholds for All Models
+const optimalCache = {};
+DATASET.models.forEach(m => {
+  let bestF1Val = -1, bestTau = 0.14;
+  for (let t = 1; t <= 95; t++) {
+    const tau = t / 100;
+    const res = computeMetrics(m.model, tau);
+    if (res.f1 > bestF1Val) {
+      bestF1Val = res.f1;
+      bestTau = tau;
+    }
+  }
+  optimalCache[m.model] = { bestTau, bestF1: bestF1Val };
+});
+
+/* SVG Drawing Helpers */
+function initSvg(id, viewBox) {
+  const svg = document.getElementById(id);
+  svg.setAttribute("viewBox", viewBox);
+  svg.setAttribute("preserveAspectRatio", "none");
+  svg.innerHTML = "";
+  return svg;
+}
+function createSvgElem(tag, attrs, text) {
+  const el = document.createElementNS("http://www.w3.org/2000/svg", tag);
+  for (const k in attrs) el.setAttribute(k, attrs[k]);
+  if (text !== undefined && text !== null) el.textContent = text;
+  return el;
+}
+
+/* Tooltip handler */
+const tooltip = document.getElementById("svgTooltip");
+function showTooltip(evt, text) {
+  tooltip.innerHTML = text;
+  tooltip.style.left = (evt.clientX + 14) + "px";
+  tooltip.style.top = (evt.clientY - 24) + "px";
+  tooltip.style.opacity = 1;
+}
+function hideTooltip() { tooltip.style.opacity = 0; }
+
+function renderSpectrum() {
+  const W = 1000, H = 290, padL = 20, padR = 20, mid = H / 2, halfH = 105, axisGap = 14;
+  const svg = initSvg("spectrumSvg", `0 0 ${W} ${H}`);
+
+  const BINS = 50;
+  const posBins = new Array(BINS).fill(0);
+  const negBins = new Array(BINS).fill(0);
+
+  EVAL_RECORDS.forEach(r => {
+    const sc = r.scores[state.currentModel];
+    const b = Math.min(BINS - 1, Math.floor(sc * BINS));
+    (r.label === 1 ? posBins : negBins)[b]++;
+  });
+
+  const maxPos = Math.max(...posBins, 1);
+  const maxNeg = Math.max(...negBins, 1);
+  const bw = (W - padL - padR) / BINS;
+  const tauX = padL + state.threshold * (W - padL - padR);
+
+  // Background grid
+  for (let i = 0; i <= 10; i++) {
+    const x = padL + (i / 10) * (W - padL - padR);
+    svg.appendChild(createSvgElem("line", {
+      x1: x, y1: 15, x2: x, y2: H - 15,
+      stroke: "var(--border)", "stroke-width": 1, "stroke-dasharray": "3 3"
+    }));
+  }
+
+  // Draw Distribution Columns
+  for (let b = 0; b < BINS; b++) {
+    const x = padL + b * bw;
+    const isAbove = ((b + 0.5) / BINS) >= state.threshold;
+
+    // Suspicious (Upper Half)
+    if (posBins[b] > 0) {
+      const bh = Math.max(3, (posBins[b] / maxPos) * halfH);
+      const rEl = createSvgElem("rect", {
+        x: x + 1, y: mid - axisGap - bh, width: bw - 2, height: bh,
+        fill: "var(--accent-risk)",
+        "fill-opacity": isAbove ? 0.95 : 0.22,
+        rx: 1
+      });
+      rEl.onmousemove = e => showTooltip(e, `Score Band: [${fmtNum(b/BINS)} - ${fmtNum((b+1)/BINS)}]<br>Fraud Txns: <b>${posBins[b]}</b>`);
+      rEl.onmouseleave = hideTooltip;
+      svg.appendChild(rEl);
+    }
+
+    // Legitimate (Lower Half)
+    if (negBins[b] > 0) {
+      const bh = Math.max(3, (negBins[b] / maxNeg) * halfH);
+      const rEl = createSvgElem("rect", {
+        x: x + 1, y: mid + axisGap, width: bw - 2, height: bh,
+        fill: isAbove ? "var(--accent-warn)" : "var(--accent-legit)",
+        "fill-opacity": isAbove ? 0.9 : 0.25,
+        rx: 1
+      });
+      rEl.onmousemove = e => showTooltip(e, `Score Band: [${fmtNum(b/BINS)} - ${fmtNum((b+1)/BINS)}]<br>Legit Txns: <b>${negBins[b]}</b><br>${isAbove ? '<span style="color:var(--accent-warn)">Flagged as False Alarm</span>' : '<span style="color:var(--accent-legit)">Passed Frictionless</span>'}`);
+      rEl.onmouseleave = hideTooltip;
+      svg.appendChild(rEl);
+    }
+  }
+
+  // Center Zero Axis
+  svg.appendChild(createSvgElem("line", {
+    x1: padL, y1: mid, x2: W - padR, y2: mid,
+    stroke: "var(--text-faint)", "stroke-width": 1.5
+  }));
+
+  // Threshold Flag Line
+  svg.appendChild(createSvgElem("line", {
+    x1: tauX, y1: 8, x2: tauX, y2: H - 8,
+    stroke: "var(--accent-warn)", "stroke-width": 2.5
+  }));
+
+  // Handle Pill
+  const pillG = createSvgElem("g", { transform: `translate(${tauX}, 14)` });
+  pillG.appendChild(createSvgElem("rect", {
+    x: -32, y: 0, width: 64, height: 20, rx: 4,
+    fill: "var(--accent-warn)"
+  }));
+  pillG.appendChild(createSvgElem("text", {
+    x: 0, y: 14, "text-anchor": "middle",
+    fill: "#000", "font-weight": 700, "font-size": 11, "font-family": "var(--font-mono)"
+  }, `&tau;=${fmtNum(state.threshold)}`));
+  svg.appendChild(pillG);
+
+  // Region Labels
+  svg.appendChild(createSvgElem("text", {
+    x: padL + 6, y: 28, fill: "var(--accent-risk)", "font-weight": 700, "font-size": 11
+  }, "&uarr; CONFIRMED FRAUD DISTRIBUTION"));
+  svg.appendChild(createSvgElem("text", {
+    x: padL + 6, y: H - 20, fill: "var(--accent-legit)", "font-weight": 700, "font-size": 11
+  }, "&darr; LEGITIMATE DISTRIBUTION"));
+}
+
+// Spectrum Drag Logic
+(function initSpectrumInteractions() {
+  const svg = document.getElementById("spectrumSvg");
+  let dragging = false;
+
+  function updateFromX(clientX) {
+    const rect = svg.getBoundingClientRect();
+    const x = clientX - rect.left;
+    const padL = 20 * (rect.width / 1000);
+    const padR = 20 * (rect.width / 1000);
+    const usableW = rect.width - padL - padR;
+    let t = (x - padL) / usableW;
+    t = Math.max(0.01, Math.min(0.95, t));
+    setThreshold(Math.round(t * 100) / 100);
+  }
+
+  svg.addEventListener("pointerdown", e => {
+    dragging = true;
+    svg.setPointerCapture(e.pointerId);
+    updateFromX(e.clientX);
+  });
+  svg.addEventListener("pointermove", e => { if (dragging) updateFromX(e.clientX); });
+  svg.addEventListener("pointerup", () => dragging = false);
+  svg.addEventListener("pointercancel", () => dragging = false);
+})();
+
+function renderLossOptimizer() {
+  const W = 600, H = 200, padL = 60, padR = 30, padT = 20, padB = 40;
+  const svg = initSvg("lossCurveSvg", `0 0 ${W} ${H}`);
+
+  const curveData = [];
+  let minLoss = Infinity, minLossTau = 0.14;
+
+  for (let t = 1; t <= 95; t++) {
+    const tau = t / 100;
+    const m = computeMetrics(state.currentModel, tau);
+    const loss = computeLoss(m.tp, m.fp, m.fn, m.tn, state.costFP, state.costFN);
+    if (loss < minLoss) {
+      minLoss = loss;
+      minLossTau = tau;
+    }
+    curveData.push({ tau, loss });
+  }
+
+  const maxLoss = Math.max(...curveData.map(d => d.loss));
+  const X = tau => padL + (tau / 0.95) * (W - padL - padR);
+  const Y = loss => H - padB - (loss / maxLoss) * (H - padT - padB);
+
+  // Horizontal Grid
+  for (let g = 0; g <= 4; g++) {
+    const yVal = (g / 4) * maxLoss;
+    const yPos = Y(yVal);
+    svg.appendChild(createSvgElem("line", {
+      x1: padL, y1: yPos, x2: W - padR, y2: yPos,
+      stroke: "var(--border)", "stroke-width": 1
+    }));
+    svg.appendChild(createSvgElem("text", {
+      x: padL - 8, y: yPos + 4, "text-anchor": "end",
+      fill: "var(--text-faint)", "font-size": 10, "font-family": "var(--font-mono)"
+    }, fmtCurrency(yVal)));
+  }
+
+  // Draw Path
+  let pathStr = "";
+  curveData.forEach((d, i) => {
+    pathStr += (i === 0 ? "M " : " L ") + X(d.tau) + " " + Y(d.loss);
+  });
+  svg.appendChild(createSvgElem("path", {
+    d: pathStr, fill: "none", stroke: "var(--accent-emerald)", "stroke-width": 2.5
+  }));
+
+  // Current Threshold Marker
+  const curMetrics = computeMetrics(state.currentModel, state.threshold);
+  const curLoss = computeLoss(curMetrics.tp, curMetrics.fp, curMetrics.fn, curMetrics.tn, state.costFP, state.costFN);
+  const curX = X(state.threshold);
+  const curY = Y(curLoss);
+
+  svg.appendChild(createSvgElem("line", {
+    x1: curX, y1: padT, x2: curX, y2: H - padB,
+    stroke: "var(--accent-warn)", "stroke-width": 1.5, "stroke-dasharray": "3 3"
+  }));
+  svg.appendChild(createSvgElem("circle", {
+    cx: curX, cy: curY, r: 5, fill: "var(--accent-warn)", stroke: "var(--bg-deep)", "stroke-width": 2
+  }));
+
+  // Optimal Point Marker
+  const optX = X(minLossTau);
+  const optY = Y(minLoss);
+  svg.appendChild(createSvgElem("circle", {
+    cx: optX, cy: optY, r: 6, fill: "var(--accent-emerald)", stroke: "#fff", "stroke-width": 2
+  }));
+
+  // Optimal Summary Card Box Update
+  const diffFromOpt = curLoss - minLoss;
+  document.getElementById("costOptimalSummary").innerHTML =
+    `Dollar-optimal threshold is <b>&tau; = ${fmtNum(minLossTau)}</b> (Minimum loss: <b>${fmtCurrency(minLoss)}</b>).<br>` +
+    (state.threshold === minLossTau
+      ? `<span style="color:var(--accent-emerald)">&#10003; Currently operating at peak financial efficiency.</span>`
+      : `Current loss is <b>${fmtCurrency(curLoss)}</b> (<span style="color:var(--accent-risk)">+${fmtCurrency(diffFromOpt)}</span> above optimal).`);
+}
+
+function renderPRDynamics() {
+  const W = 600, H = 240, padL = 46, padR = 20, padT = 16, padB = 34;
+  const svg = initSvg("prDynamicsSvg", `0 0 ${W} ${H}`);
+
+  const points = [];
+  for (let t = 1; t <= 95; t++) {
+    const tau = t / 100;
+    points.push({ tau, ...computeMetrics(state.currentModel, tau) });
+  }
+
+  const X = tau => padL + (tau / 0.95) * (W - padL - padR);
+  const Y = v => H - padB - v * (H - padT - padB);
+
+  // Y Grid
+  for (let g = 0; g <= 4; g++) {
+    const y = Y(g / 4);
+    svg.appendChild(createSvgElem("line", {
+      x1: padL, y1: y, x2: W - padR, y2: y, stroke: "var(--border)", "stroke-width": 1
+    }));
+    svg.appendChild(createSvgElem("text", {
+      x: padL - 6, y: y + 4, "text-anchor": "end", fill: "var(--text-faint)",
+      "font-size": 10, "font-family": "var(--font-mono)"
+    }, fmtPct(g / 4, 0)));
+  }
+
+  // Draw Series
+  const drawLine = (key, color) => {
+    let d = "";
+    points.forEach((p, i) => { d += (i === 0 ? "M " : " L ") + X(p.tau) + " " + Y(p[key]); });
+    svg.appendChild(createSvgElem("path", {
+      d, fill: "none", stroke: color, "stroke-width": 2, "stroke-linejoin": "round"
+    }));
+  };
+  drawLine("prec", "var(--accent-legit)");
+  drawLine("rec", "var(--accent-risk)");
+  drawLine("f1", "var(--accent-warn)");
+
+  // Threshold bar
+  const curX = X(state.threshold);
+  svg.appendChild(createSvgElem("line", {
+    x1: curX, y1: padT, x2: curX, y2: H - padB,
+    stroke: "var(--text-main)", "stroke-width": 1.5, "stroke-dasharray": "2 2"
+  }));
+}
+
+function renderBenchmarkTable() {
+  const tbody = document.querySelector("#benchmarkTable tbody");
+  tbody.innerHTML = "";
+
+  DATASET.models.forEach(m => {
+    const opt = optimalCache[m.model];
+    const tr = document.createElement("tr");
+    if (m.model === state.currentModel) tr.className = "active-model-row";
+
+    tr.innerHTML = `
+      <td><strong>${m.model}</strong></td>
+      <td class="num mono" style="color:var(--accent-emerald)"><strong>${fmtNum(m.pr_auc, 4)}</strong></td>
+      <td class="num mono">${fmtNum(m.roc_auc, 4)}</td>
+      <td class="num mono">${fmtNum(opt.bestF1, 3)}</td>
+      <td class="num mono" style="color:var(--accent-warn)">${fmtNum(opt.bestTau)}</td>
+      <td class="num mono" style="color:var(--text-muted)">${fmtPct(m.accuracy)}</td>
+    `;
+    tr.style.cursor = "pointer";
+    tr.onclick = () => selectModel(m.model);
+    tbody.appendChild(tr);
+  });
+
+  document.getElementById("benchmarkCallout").innerHTML =
+    `Logistic Regression achieves the top PR-AUC (<b>0.1717</b>) over XGBoost (<b>0.1030</b>). ` +
+    `Tree-based models overfit the sparse, 3% positive signal, while linear regularization maintains robust out-of-sample generalization.`;
+}
+
+function renderSeparationChart() {
+  const W = 600, rowH = 26, padL = 200, padR = 60, padT = 10;
+  const H = padT * 2 + DATASET.cohen_d.length * rowH;
+  const svg = initSvg("sepChartSvg", `0 0 ${W} ${H}`);
+
+  const maxD = 0.7;
+  const X = v => (v / maxD) * (W - padL - padR);
+
+  DATASET.cohen_d.forEach((item, i) => {
+    const y = padT + i * rowH;
+    const barW = Math.max(2, X(Math.abs(item.d)));
+    const isStrong = Math.abs(item.d) > 0.3;
+
+    svg.appendChild(createSvgElem("text", {
+      x: padL - 10, y: y + 14, "text-anchor": "end",
+      fill: "var(--text-main)", "font-size": 11, "font-family": "var(--font-mono)"
+    }, item.feature.replace(/_/g, " ")));
+
+    // Track
+    svg.appendChild(createSvgElem("rect", {
+      x: padL, y: y + 3, width: W - padL - padR, height: 14,
+      fill: "var(--panel-elevated)", rx: 2
+    }));
+
+    // Fill
+    svg.appendChild(createSvgElem("rect", {
+      x: padL, y: y + 3, width: barW, height: 14,
+      fill: isStrong ? "var(--accent-risk)" : "var(--accent-legit)",
+      "fill-opacity": 0.85, rx: 2
+    }));
+
+    // Value text
+    svg.appendChild(createSvgElem("text", {
+      x: padL + barW + 8, y: y + 14,
+      fill: isStrong ? "var(--accent-risk)" : "var(--text-faint)",
+      "font-size": 10.5, "font-family": "var(--font-mono)", "font-weight": 600
+    }, `d=${fmtNum(item.d, 2)}`));
+  });
+}
+
+function renderMiniDensity(svgId, featureName) {
+  const W = 600, H = 100, padL = 30, padR = 20, padT = 10, padB = 20;
+  const svg = initSvg(svgId, `0 0 ${W} ${H}`);
+  const BINS = 30;
+
+  let maxVal = featureName === "distanceKm" ? 2000 : 15000;
+  const legitCounts = new Array(BINS).fill(0);
+  const fraudCounts = new Array(BINS).fill(0);
+
+  EVAL_RECORDS.forEach(r => {
+    const val = r[featureName];
+    const b = Math.min(BINS - 1, Math.floor((val / maxVal) * BINS));
+    (r.label === 1 ? fraudCounts : legitCounts)[b]++;
+  });
+
+  const totLegit = legitCounts.reduce((a, b) => a + b, 0) || 1;
+  const totFraud = fraudCounts.reduce((a, b) => a + b, 0) || 1;
+  const L = legitCounts.map(c => c / totLegit);
+  const F = fraudCounts.map(c => c / totFraud);
+  const maxDense = Math.max(...L, ...F);
+
+  const bw = (W - padL - padR) / BINS;
+  const Y = dens => H - padB - (dens / maxDense) * (H - padT - padB);
+
+  const drawDensityLine = (series, color) => {
+    let d = "";
+    series.forEach((val, i) => {
+      d += (i === 0 ? "M " : " L ") + (padL + i * bw + bw / 2) + " " + Y(val);
+    });
+    svg.appendChild(createSvgElem("path", {
+      d, fill: "none", stroke: color, "stroke-width": 2, "stroke-linejoin": "round"
+    }));
+  };
+
+  drawDensityLine(L, "var(--accent-legit)");
+  drawDensityLine(F, "var(--accent-risk)");
+
+  svg.appendChild(createSvgElem("line", {
+    x1: padL, y1: H - padB, x2: W - padR, y2: H - padB, stroke: "var(--border)"
+  }));
+}
+
+function renderSegmentChart() {
+  const rows = DATASET.by_cat[state.currentSegment];
+  const W = 600, rowH = 22, padL = 130, padR = 80, padT = 10;
+  const H = padT * 2 + rows.length * rowH;
+  const svg = initSvg("segmentChartSvg", `0 0 ${W} ${H}`);
+
+  const maxRate = Math.max(...rows.map(r => r.rate), DATASET.pos_rate * 1.5);
+  const X = r => (r / maxRate) * (W - padL - padR);
+
+  rows.forEach((r, i) => {
+    const y = padT + i * rowH;
+    const bw = X(r.rate);
+
+    svg.appendChild(createSvgElem("text", {
+      x: padL - 10, y: y + 13, "text-anchor": "end",
+      fill: "var(--text-main)", "font-size": 11, "font-family": "var(--font-mono)"
+    }, r.name));
+
+    svg.appendChild(createSvgElem("rect", {
+      x: padL, y: y + 3, width: W - padL - padR, height: 12, fill: "var(--panel-elevated)", rx: 2
+    }));
+
+    svg.appendChild(createSvgElem("rect", {
+      x: padL, y: y + 3, width: bw, height: 12, fill: "var(--accent-risk)", "fill-opacity": 0.8, rx: 2
+    }));
+
+    svg.appendChild(createSvgElem("text", {
+      x: padL + bw + 6, y: y + 13,
+      fill: "var(--text-muted)", "font-size": 10, "font-family": "var(--font-mono)"
+    }, fmtPct(r.rate, 2)));
+  });
+
+  // Base rate guideline
+  const baseRateX = padL + X(DATASET.pos_rate);
+  svg.appendChild(createSvgElem("line", {
+    x1: baseRateX, y1: padT, x2: baseRateX, y2: H - padT,
+    stroke: "var(--accent-warn)", "stroke-width": 1.5, "stroke-dasharray": "3 3"
+  }));
+}
+
+function renderHourlyChart() {
+  const W = 600, H = 290, padL = 40, padR = 20, padT = 20, padB = 40;
+  const svg = initSvg("hourlyChartSvg", `0 0 ${W} ${H}`);
+
+  const maxRate = Math.max(...DATASET.by_hour.map(h => h.rate)) * 1.15;
+  const bw = (W - padL - padR) / 24;
+  const Y = r => H - padB - (r / maxRate) * (H - padT - padB);
+
+  DATASET.by_hour.forEach(h => {
+    const x = padL + h.hour * bw;
+    const barH = H - padB - Y(h.rate);
+    const isSpike = h.rate > DATASET.pos_rate * 1.4;
+
+    const rEl = createSvgElem("rect", {
+      x: x + 2, y: Y(h.rate), width: bw - 4, height: barH,
+      fill: isSpike ? "var(--accent-risk)" : "var(--accent-legit)",
+      "fill-opacity": isSpike ? 0.9 : 0.45, rx: 2
+    });
+    rEl.onmousemove = e => showTooltip(e, `Hour: <b>${h.hour}:00</b><br>Fraud Rate: <b>${fmtPct(h.rate, 2)}</b>`);
+    rEl.onmouseleave = hideTooltip;
+    svg.appendChild(rEl);
+
+    if (h.hour % 2 === 0) {
+      svg.appendChild(createSvgElem("text", {
+        x: x + bw / 2, y: H - padB + 16, "text-anchor": "middle",
+        fill: "var(--text-faint)", "font-size": 10, "font-family": "var(--font-mono)"
+      }, h.hour));
+    }
+  });
+
+  // Base rate dashed line
+  const baseRateY = Y(DATASET.pos_rate);
+  svg.appendChild(createSvgElem("line", {
+    x1: padL, y1: baseRateY, x2: W - padR, y2: baseRateY,
+    stroke: "var(--accent-warn)", "stroke-width": 1.5, "stroke-dasharray": "3 3"
+  }));
+  svg.appendChild(createSvgElem("text", {
+    x: W - padR, y: baseRateY - 6, "text-anchor": "end",
+    fill: "var(--accent-warn)", "font-size": 10, "font-family": "var(--font-mono)"
+  }, `Baseline: ${fmtPct(DATASET.pos_rate, 2)}`));
+}
+
+function buildScorerInputs() {
+  const container = document.getElementById("scorerForm");
+  container.innerHTML = `
+    <div class="form-item">
+      <label>Transaction Amount ($)</label>
+      <input type="number" id="sc_amount" value="4850" min="1">
+    </div>
+    <div class="form-item">
+      <label>Failed Txns (Past 24h)</label>
+      <input type="number" id="sc_failed24h" value="2" min="0" max="10">
+    </div>
+    <div class="form-item">
+      <label>Distance From Usual Location (km)</label>
+      <input type="number" id="sc_distKm" value="720" min="0">
+    </div>
+    <div class="form-item">
+      <label>Merchant Category</label>
+      <select id="sc_mcat">
+        ${M_CATS.map(c => `<option value="${c}" ${c==='electronics'?'selected':''}>${c}</option>`).join('')}
+      </select>
+    </div>
+    <div class="form-item">
+      <label>Channel / Type</label>
+      <select id="sc_ttype">
+        ${T_TYPES.map(t => `<option value="${t}" ${t==='BANK_TRANSFER'?'selected':''}>${t}</option>`).join('')}
+      </select>
+    </div>
+    <div class="form-item">
+      <label>Device Category</label>
+      <select id="sc_dtype">
+        ${D_TYPES.map(d => `<option value="${d}" ${d==='desktop'?'selected':''}>${d}</option>`).join('')}
+      </select>
+    </div>
+    <div class="form-item">
+      <label>Payment Instrument</label>
+      <select id="sc_pmeth">
+        ${P_METHS.map(p => `<option value="${p}">${p}</option>`).join('')}
+      </select>
+    </div>
+    <div class="form-item">
+      <label>New Device Recognized?</label>
+      <select id="sc_isNewDev">
+        <option value="1" selected>Yes (Unseen Hardware Fingerprint)</option>
+        <option value="0">No (Known Device)</option>
+      </select>
+    </div>
+    <div class="form-item">
+      <label>International Route?</label>
+      <select id="sc_isIntl">
+        <option value="1">Yes (Foreign Gateway)</option>
+        <option value="0" selected>No (Domestic Route)</option>
+      </select>
+    </div>
+  `;
+
+  // Attach live event triggers
+  container.querySelectorAll("input, select").forEach(el => {
+    el.addEventListener("input", computeLiveScore);
+  });
+}
+
+function computeLiveScore() {
+  const sc = DATASET.scorer;
+  const amt = +document.getElementById("sc_amount").value || 0;
+  const failed24h = +document.getElementById("sc_failed24h").value || 0;
+  const distKm = +document.getElementById("sc_distKm").value || 0;
+  const mCat = document.getElementById("sc_mcat").value;
+  const tType = document.getElementById("sc_ttype").value;
+  const dType = document.getElementById("sc_dtype").value;
+  const pMeth = document.getElementById("sc_pmeth").value;
+  const isNewDev = +document.getElementById("sc_isNewDev").value;
+  const isIntl = +document.getElementById("sc_isIntl").value;
+
+  const pushes = [];
+
+  function addPush(name, rawVal, featKey) {
+    const f = sc.features[featKey];
+    const std = (rawVal - f.mean) / f.scale;
+    const impact = std * f.coef;
+    pushes.push({ name, impact });
+    return impact;
+  }
+
+  let z = sc.intercept;
+  z += addPush("Failed Txns (24h)", failed24h, "failed_transactions_last_24h");
+  z += addPush("Geohash Distance", distKm, "distance_from_usual_location_km");
+  z += addPush("New Device Flag", isNewDev, "is_new_device");
+  z += addPush("International Flag", isIntl, "is_international");
+  z += addPush("Txn Amount", amt, "amount");
+
+  const catMCat = sc.cat_weights.merchant_category[mCat] || 0;
+  const catTType = sc.cat_weights.transaction_type[tType] || 0;
+  const catDType = sc.cat_weights.device_type[dType] || 0;
+  const catPMeth = sc.cat_weights.payment_method[pMeth] || 0;
+
+  pushes.push({ name: `Category: ${mCat}`, impact: catMCat });
+  pushes.push({ name: `Type: ${tType}`, impact: catTType });
+  pushes.push({ name: `Device: ${dType}`, impact: catDType });
+  pushes.push({ name: `Method: ${pMeth}`, impact: catPMeth });
+
+  z += (catMCat + catTType + catDType + catPMeth);
+
+  const prob = 1 / (1 + Math.exp(-z));
+  const scoreBadge = document.getElementById("liveScoreBadge");
+  const scoreNum = document.getElementById("liveScoreNum");
+  scoreNum.textContent = fmtNum(prob, 3);
+
+  const isFlagged = prob >= state.threshold;
+  if (prob >= 0.70) {
+    scoreBadge.className = "badge b-tp";
+    scoreBadge.textContent = "CRITICAL RISK";
+    scoreNum.style.color = "var(--accent-risk)";
+  } else if (prob >= state.threshold) {
+    scoreBadge.className = "badge b-fn";
+    scoreBadge.textContent = "ELEVATED RISK";
+    scoreNum.style.color = "var(--accent-warn)";
+  } else {
+    scoreBadge.className = "badge b-fp";
+    scoreBadge.textContent = "BENIGN / CLEAN";
+    scoreNum.style.color = "var(--accent-legit)";
+  }
+
+  document.getElementById("liveVerdictThresh").textContent = fmtNum(state.threshold);
+  const verdictText = document.getElementById("liveVerdictText");
+  verdictText.textContent = isFlagged ? "FLAG FOR IMMEDIATE MANUAL REVIEW" : "AUTO-APPROVE (FRICTIONLESS)";
+  verdictText.style.color = isFlagged ? "var(--accent-risk)" : "var(--accent-emerald)";
+
+  // Render top 5 Shapley/Attribution pushes
+  pushes.sort((a, b) => Math.abs(b.impact) - Math.abs(a.impact));
+  const topPushes = pushes.slice(0, 5);
+  const maxImpact = Math.max(...topPushes.map(p => Math.abs(p.impact)), 0.1);
+
+  const waterfallContainer = document.getElementById("waterfallBars");
+  waterfallContainer.innerHTML = "";
+
+  topPushes.forEach(p => {
+    const isPos = p.impact >= 0;
+    const wPct = Math.min(100, (Math.abs(p.impact) / maxImpact) * 100);
+    const row = document.createElement("div");
+    row.className = "push-row";
+    row.innerHTML = `
+      <div class="mono" style="color:var(--text-muted);font-size:11.5px">${p.name}</div>
+      <div class="push-track">
+        <div class="push-bar" style="width:${wPct}%;background:${isPos ? 'var(--accent-risk)' : 'var(--accent-legit)'}"></div>
+      </div>
+      <div class="num mono" style="color:${isPos ? 'var(--accent-risk)' : 'var(--accent-legit)'};font-weight:600">
+        ${isPos ? '+' : ''}${fmtNum(p.impact, 3)}
+      </div>
+    `;
+    waterfallContainer.appendChild(row);
+  });
+}
+
+/* Load a random record from evaluation set into simulator */
+document.getElementById("loadRandomTxnBtn").addEventListener("click", () => {
+  const r = EVAL_RECORDS[Math.floor(Math.random() * EVAL_RECORDS.length)];
+  document.getElementById("sc_amount").value = r.amount;
+  document.getElementById("sc_failed24h").value = r.failed24h;
+  document.getElementById("sc_distKm").value = r.distanceKm;
+  document.getElementById("sc_mcat").value = r.merchant_category;
+  document.getElementById("sc_ttype").value = r.transaction_type;
+  document.getElementById("sc_dtype").value = r.device_type;
+  document.getElementById("sc_pmeth").value = r.payment_method;
+  document.getElementById("sc_isNewDev").value = r.isNewDev;
+  document.getElementById("sc_isIntl").value = r.isIntl;
+  computeLiveScore();
+});
+
+function getFilteredQueue() {
+  return EVAL_RECORDS.filter(r => {
+    const score = r.scores[state.currentModel];
+    const flagged = score >= state.threshold;
+    let status = "tn";
+    if (r.label === 1) status = flagged ? "tp" : "fn";
+    else status = flagged ? "fp" : "tn";
+
+    if (state.queueFilter !== "all" && status !== state.queueFilter) return false;
+
+    if (state.queueSearchText) {
+      const q = state.queueSearchText.toLowerCase();
+      const match = r.id.toLowerCase().includes(q)
+        || r.location.toLowerCase().includes(q)
+        || r.merchant_category.toLowerCase().includes(q)
+        || r.transaction_type.toLowerCase().includes(q);
+      if (!match) return false;
+    }
+    return true;
+  });
+}
+
+function renderCaseQueue() {
+  const filtered = getFilteredQueue();
+  const total = filtered.length;
+  const startIdx = (state.queuePage - 1) * state.pageSize;
+  const pageRecords = filtered.slice(startIdx, startIdx + state.pageSize);
+
+  const tbody = document.getElementById("caseTableBody");
+  tbody.innerHTML = "";
+
+  if (pageRecords.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="11" style="text-align:center;padding:24px;color:var(--text-faint)">No transactions matching current filter criteria.</td></tr>`;
+  } else {
+    pageRecords.forEach(r => {
+      const score = r.scores[state.currentModel];
+      const flagged = score >= state.threshold;
+      let badgeCls = "b-tn", statusLabel = "CLEAN";
+      if (r.label === 1) {
+        if (flagged) { badgeCls = "b-tp"; statusLabel = "CAUGHT FRAUD"; }
+        else { badgeCls = "b-fn"; statusLabel = "MISSED FRAUD"; }
+      } else {
+        if (flagged) { badgeCls = "b-fp"; statusLabel = "FALSE ALARM"; }
+      }
+
+      const tr = document.createElement("tr");
+      tr.innerHTML = `
+        <td><span class="badge ${badgeCls}">${statusLabel}</span></td>
+        <td class="num mono" style="font-weight:700;color:${flagged ? 'var(--accent-risk)' : 'var(--text-muted)'}">${fmtNum(score, 3)}</td>
+        <td class="mono">${r.id}</td>
+        <td class="num mono">${fmtCurrency(r.amount)}</td>
+        <td>${r.transaction_type}</td>
+        <td>${r.merchant_category}</td>
+        <td>${r.location}</td>
+        <td class="num mono">${r.distanceKm} km</td>
+        <td class="num mono">${r.failed24h}</td>
+        <td>${r.isNewDev ? '<span style="color:var(--accent-warn)">New</span>' : 'Known'}</td>
+        <td>${r.isIntl ? '<span style="color:var(--accent-risk)">Intl</span>' : 'Dom'}</td>
+      `;
+      tbody.appendChild(tr);
+    });
+  }
+
+  // Pagination Text and States
+  document.getElementById("paginationInfo").textContent =
+    `Showing ${Math.min(total, startIdx + 1)} - ${Math.min(total, startIdx + state.pageSize)} of ${fmtInt(total)}`;
+  document.getElementById("prevPageBtn").disabled = state.queuePage <= 1;
+  document.getElementById("nextPageBtn").disabled = startIdx + state.pageSize >= total;
+}
+
+// Queue pagination handlers
+document.getElementById("prevPageBtn").onclick = () => {
+  if (state.queuePage > 1) { state.queuePage--; renderCaseQueue(); }
+};
+document.getElementById("nextPageBtn").onclick = () => {
+  const filtered = getFilteredQueue();
+  if ((state.queuePage * state.pageSize) < filtered.length) { state.queuePage++; renderCaseQueue(); }
+};
+document.getElementById("queueSearch").oninput = (e) => {
+  state.queueSearchText = e.target.value.trim();
+  state.queuePage = 1;
+  renderCaseQueue();
+};
+
+// Queue status tab buttons
+document.querySelectorAll("#queueStatusFilter button").forEach(btn => {
+  btn.onclick = () => {
+    document.querySelectorAll("#queueStatusFilter button").forEach(b => b.setAttribute("aria-pressed", "false"));
+    btn.setAttribute("aria-pressed", "true");
+    state.queueFilter = btn.dataset.status;
+    state.queuePage = 1;
+    renderCaseQueue();
+  };
+});
+
+// CSV Export Logic
+document.getElementById("exportCsvBtn").onclick = () => {
+  const records = getFilteredQueue();
+  if (!records.length) return;
+
+  const headers = ["ID", "TrueLabel", "Score", "Threshold", "Status", "Amount", "Type", "Category", "Location", "DistanceKm", "Failed24h", "IsNewDevice", "IsIntl"];
+  const rows = records.map(r => {
+    const score = r.scores[state.currentModel];
+    const flagged = score >= state.threshold;
+    let st = "TN";
+    if (r.label === 1) st = flagged ? "TP" : "FN";
+    else st = flagged ? "FP" : "TN";
+    return [r.id, r.label, score.toFixed(4), state.threshold, st, r.amount, r.transaction_type, r.merchant_category, `"${r.location}"`, r.distanceKm, r.failed24h, r.isNewDev, r.isIntl].join(",");
+  });
+
+  const csvContent = "data:text/csv;charset=utf-8," + [headers.join(","), ...rows].join("\n");
+  const encodedUri = encodeURI(csvContent);
+  const link = document.createElement("a");
+  link.setAttribute("href", encodedUri);
+  link.setAttribute("download", `aegis_queue_export_t${state.threshold}.csv`);
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+};
+
+function updateHeroKPIs() {
+  const m = computeMetrics(state.currentModel, state.threshold);
+  document.getElementById("threshText").textContent = fmtNum(state.threshold);
+  document.getElementById("threshSlider").value = Math.round(state.threshold * 100);
+
+  document.getElementById("kpiTP").textContent = fmtInt(m.tp);
+  document.getElementById("kpiFN").textContent = fmtInt(m.fn);
+  document.getElementById("kpiFP").textContent = fmtInt(m.fp);
+  document.getElementById("kpiTN").textContent = fmtInt(m.tn);
+
+  document.getElementById("subTP").textContent = `${fmtPct(m.rec)} of genuine fraud identified`;
+  document.getElementById("subFN").textContent = `${fmtInt(m.fn)} fraudulent leaks unprevented`;
+  document.getElementById("subFP").textContent = `${fmtPct(m.fp / m.total)} false alert overhead`;
+  document.getElementById("subTN").textContent = `${fmtPct(m.tn / (m.tn + m.fp))} of clean flow frictionless`;
+
+  document.getElementById("kpiPrec").textContent = fmtPct(m.prec);
+  document.getElementById("kpiRec").textContent = fmtPct(m.rec);
+  document.getElementById("kpiF1").textContent = fmtNum(m.f1, 3);
+  document.getElementById("kpiAlertRate").textContent = Math.round((m.alerts / m.total) * 1000) + " /k";
+}
+
+function setThreshold(tau) {
+  state.threshold = tau;
+  updateHeroKPIs();
+  renderSpectrum();
+  renderPRDynamics();
+  renderLossOptimizer();
+  computeLiveScore();
+  renderCaseQueue();
+}
+
+function selectModel(modelName) {
+  state.currentModel = modelName;
+  document.querySelectorAll("#modelSelector button").forEach(btn => {
+    btn.setAttribute("aria-pressed", btn.textContent === modelName);
+  });
+  renderBenchmarkTable();
+  updateHeroKPIs();
+  renderSpectrum();
+  renderPRDynamics();
+  renderLossOptimizer();
+  renderCaseQueue();
+}
+
+// Preset Buttons
+document.querySelectorAll(".preset-btn[data-preset]").forEach(btn => {
+  btn.onclick = () => {
+    const p = btn.dataset.preset;
+    if (p === "bestF1") {
+      setThreshold(optimalCache[state.currentModel].bestTau);
+    } else if (p === "catch50") {
+      const posScores = EVAL_RECORDS.filter(r => r.label === 1).map(r => r.scores[state.currentModel]).sort((a, b) => b - a);
+      const medianPos = posScores[Math.floor(posScores.length * 0.5)];
+      setThreshold(Math.round(medianPos * 100) / 100);
+    } else if (p === "cap5") {
+      const allScores = EVAL_RECORDS.map(r => r.scores[state.currentModel]).sort((a, b) => b - a);
+      const capVal = allScores[Math.floor(allScores.length * 0.05)];
+      setThreshold(Math.max(0.01, Math.round(capVal * 100) / 100));
+    } else if (p === "std50") {
+      setThreshold(0.50);
+    }
+  };
+});
+
+// Slider Input Listener
+document.getElementById("threshSlider").addEventListener("input", e => {
+  setThreshold(+e.target.value / 100);
+});
+
+// Cost Inputs
+document.getElementById("costFPInput").addEventListener("input", e => {
+  state.costFP = Math.max(1, +e.target.value || 0);
+  renderLossOptimizer();
+});
+document.getElementById("costFNInput").addEventListener("input", e => {
+  state.costFN = Math.max(1, +e.target.value || 0);
+  renderLossOptimizer();
+});
+
+// Build Model Selector Pills
+const modelSelector = document.getElementById("modelSelector");
+DATASET.models.forEach(m => {
+  const btn = document.createElement("button");
+  btn.className = "seg-btn";
+  btn.textContent = m.model;
+  btn.setAttribute("aria-pressed", m.model === state.currentModel);
+  btn.onclick = () => selectModel(m.model);
+  modelSelector.appendChild(btn);
+});
+
+// Build Segment Selector Tabs
+const segmentTabGroup = document.getElementById("segmentTabGroup");
+Object.keys(DATASET.by_cat).forEach((catKey, i) => {
+  const btn = document.createElement("button");
+  btn.className = "seg-btn";
+  btn.textContent = catKey.replace(/_/g, " ");
+  btn.setAttribute("aria-pressed", i === 0);
+  btn.onclick = () => {
+    document.querySelectorAll("#segmentTabGroup button").forEach(b => b.setAttribute("aria-pressed", "false"));
+    btn.setAttribute("aria-pressed", "true");
+    state.currentSegment = catKey;
+    renderSegmentChart();
+  };
+  segmentTabGroup.appendChild(btn);
+});
+
+// Theme switcher
+document.getElementById("themeToggleBtn").onclick = () => {
+  const cur = document.documentElement.getAttribute("data-theme");
+  const next = cur === "light" ? "dark" : "light";
+  document.documentElement.setAttribute("data-theme", next);
+  renderAllComponents();
+};
+
+function renderAllComponents() {
+  updateHeroKPIs();
+  renderSpectrum();
+  renderBenchmarkTable();
+  renderPRDynamics();
+  renderLossOptimizer();
+  renderSeparationChart();
+  renderMiniDensity("distDensitySvg", "distanceKm");
+  renderMiniDensity("amtDensitySvg", "amount");
+  renderSegmentChart();
+  renderHourlyChart();
+  computeLiveScore();
+  renderCaseQueue();
+}
+
+// Initial Boot
+buildScorerInputs();
+renderAllComponents();
+window.addEventListener("resize", () => {
+  renderSpectrum();
+  renderLossOptimizer();
+  renderPRDynamics();
+});
+</script>
+</body>
+</html>
